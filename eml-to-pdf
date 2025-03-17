@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-import os
 from email import policy
 from email.message import Message
 from email.parser import BytesParser
@@ -33,9 +32,7 @@ def parse_headers(msg: Message):
     headers = dict()
     for _h in EML_HEADERS:
         if _h == 'Date':
-            headers[_h] = (
-                parsedate_to_datetime(msg[_h]).astimezone(TZ).strftime(TS_FORMAT)
-            )
+            headers[_h] = parsedate_to_datetime(msg[_h]).astimezone(TZ)
         elif _h == 'Subject':
             headers[_h] = msg.get(_h, '–').replace('/', '_')
         else:
@@ -58,7 +55,7 @@ def eml_to_html(msg: Message):
     <meta charset="utf-8">
     <title>Email: {headers.get('Subject')}</title>
     <meta name="author" content="{headers.get('From')}">
-    <meta name="dcterms.created" content="{headers.get('Date')}">
+    <meta name="dcterms.created" content="{headers.get('Date').isoformat()}">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
