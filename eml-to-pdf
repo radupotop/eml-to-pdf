@@ -3,12 +3,16 @@
 from email import policy
 from email.message import Message
 from email.parser import BytesParser
+from email.utils import parsedate_to_datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from bs4 import BeautifulSoup
 from weasyprint import HTML
 
 EML_HEADERS = ['From', 'To', 'Cc', 'Subject', 'Date']
+TS_FORMAT = '%-d %B %Y, %H:%M'  # https://strftime.org/
+TZ = ZoneInfo('Europe/London')
 
 
 def strip_html_tags(html_source):
@@ -26,8 +30,16 @@ def read_eml(eml_path) -> Message:
 
 def parse_headers(msg: Message):
     headers = dict()
-    for h in EML_HEADERS:
-        headers[h] = msg.get(h, '–').replace('<', '&lt;').replace('>', '&gt;')
+    for _h in EML_HEADERS:
+        if _h == 'Date':
+            # breakpoint()
+            headers[_h] = (
+                parsedate_to_datetime(msg[_h]).astimezone(TZ).strftime(TS_FORMAT)
+            )
+        elif _h == 'Subject':
+            headers[_h] = msg.get('Subject', '–').replace('/', '_')
+        else:
+            headers[_h] = msg.get(_h, '–').replace('<', '&lt;').replace('>', '&gt;')
     return headers
 
 
