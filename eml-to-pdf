@@ -56,7 +56,7 @@ def eml_to_html(msg: Message):
     <title>Email: {headers.get('Subject')}</title>
     <meta name="author" content="{headers.get('From')}">
     <meta name="dcterms.created" content="{headers.get('Date').isoformat()}">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="file:///home/radu/Projects/eml-to-pdf/style.css">
 </head>
 <body>
     <p class="header">
@@ -110,10 +110,7 @@ def eml_to_html(msg: Message):
 
 def save_pdf_from_html(html_content, pdf_path):
     Path(pdf_path + '.html').write_text(html_content)
-    HTML(
-        string=html_content,
-        base_url='/home/radu/Projects/eml-to-pdf',
-    ).write_pdf(pdf_path)
+    HTML(string=html_content).write_pdf(pdf_path)
 
 
 # Example usage:
