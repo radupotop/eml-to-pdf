@@ -32,12 +32,11 @@ def parse_headers(msg: Message):
     headers = dict()
     for _h in EML_HEADERS:
         if _h == 'Date':
-            # breakpoint()
             headers[_h] = (
                 parsedate_to_datetime(msg[_h]).astimezone(TZ).strftime(TS_FORMAT)
             )
         elif _h == 'Subject':
-            headers[_h] = msg.get('Subject', '–').replace('/', '_')
+            headers[_h] = msg.get(_h, '–').replace('/', '_')
         else:
             headers[_h] = msg.get(_h, '–').replace('<', '&lt;').replace('>', '&gt;')
     return headers
