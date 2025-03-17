@@ -1,0 +1,113 @@
+#!/usr/bin/env python3
+
+from email import policy
+from email.message import Message
+from email.parser import BytesParser
+from pathlib import Path
+
+from bs4 import BeautifulSoup
+from weasyprint import HTML
+
+EML_HEADERS = ['From', 'To', 'Cc', 'Subject', 'Date']
+
+
+def strip_html_tags(html_source):
+    """Strip all HTML tags and return plain text."""
+    soup = BeautifulSoup(html_source, 'html.parser')
+    return soup.get_text()
+
+
+def read_eml(eml_path) -> Message:
+    # Load the email
+    fb = Path(eml_path).read_bytes()
+    msg = BytesParser(policy=policy.default).parsebytes(fb)
+    return msg
+
+
+def parse_headers(msg: Message):
+    headers = dict()
+    for h in EML_HEADERS:
+        headers[h] = msg.get(h, '–').replace('<', '&lt;').replace('>', '&gt;')
+    return headers
+
+
+def render_headers(headers: dict):
+    return '\n'.join([f'<strong>{k}:</strong> {v}</br>' for k, v in headers.items()])
+
+
+def eml_to_html(msg: Message):
+    # Extract headers
+    headers = parse_headers(msg)
+
+    # Prepare HTML content
+    html_content = f"""<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Email Export</title>
+    <style>
+        body {{ font-family: Arial, sans-serif; font-size: 14px; }}
+        .header {{ margin-left: 0; }}
+        .content {{ white-space: pre-wrap; }}
+    </style>
+</head>
+<body>
+    <p class="header">
+        {render_headers(headers)}
+    </p>
+    <div class="content">
+"""
+
+    # Extract and add the email body to HTML
+    def get_alternative_payload(part):
+        """Handle multipart/alternative and choose the best available content."""
+        preferred_part = None
+        for subpart in part.iter_parts():
+            content_type = subpart.get_content_type()
+            if 'html' in content_type or (
+                preferred_part is None and 'plain' in content_type
+            ):
+                preferred_part = subpart
+        if preferred_part:
+            charset = preferred_part.get_content_charset() or 'utf-8'
+            payload = preferred_part.get_payload(decode=True).decode(charset, 'ignore')
+            return strip_html_tags(payload)
+        return ''
+
+    if msg.is_multipart():
+        for part in msg.iter_parts():
+            content_type = part.get_content_type()
+            if 'text/plain' in content_type:
+                charset = part.get_content_charset() or 'utf-8'
+                payload = part.get_payload(decode=True).decode(charset, 'ignore')
+                html_content += f'<pre>{payload}</pre>'
+            elif 'text/html' in content_type:
+                charset = part.get_content_charset() or 'utf-8'
+                payload = part.get_payload(decode=True).decode(charset, 'ignore')
+                html_content += strip_html_tags(payload)
+            elif 'multipart/alternative' in content_type:
+                html_content += get_alternative_payload(part)
+    else:
+        payload = msg.get_payload(decode=True).decode(
+            msg.get_content_charset() or 'utf-8', 'ignore'
+        )
+        html_content += f'<pre>{payload}</pre>'
+
+    html_content += """
+    </div>
+</body>
+</html>
+"""
+    return html_content
+
+
+def save_pdf_from_html(html_content, pdf_path):
+    Path(pdf_path + '.html').write_text(html_content)
+    HTML(string=html_content).write_pdf(pdf_path)
+
+
+# Example usage:
+eml_path = '2024-06-07_1219 update - Steven Strauss <steven@quantumgroup.uk>.eml'
+raw_eml = read_eml(eml_path)
+html_content = eml_to_html(raw_eml)
+save_pdf_from_html(html_content, eml_path + '.pdf')
