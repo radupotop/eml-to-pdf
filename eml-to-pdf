@@ -10,7 +10,7 @@ from zoneinfo import ZoneInfo
 from bs4 import BeautifulSoup
 from weasyprint import HTML
 
-EML_HEADERS = ['From', 'To', 'Cc', 'Subject', 'Date']
+EML_HEADERS = ['Subject', 'From', 'Date', 'To', 'Cc']
 TS_FORMAT = '%-d %B %Y, %H:%M'  # https://strftime.org/
 TZ = ZoneInfo('Europe/London')
 
