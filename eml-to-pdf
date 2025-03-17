@@ -44,6 +44,27 @@ def render_headers(headers: dict):
     return '\n'.join([f'<strong>{k}:</strong> {v}</br>' for k, v in headers.items()])
 
 
+def parse_part(part: Message) -> str | None:
+    content_type = part.get_content_type()
+    print(content_type)
+    payload = None
+    if content_type in ('text/plain', 'text/html'):
+        charset = part.get_content_charset() or 'utf-8'
+        payload = part.get_payload(decode=True).decode(charset, 'ignore')
+    if content_type == 'text/html':
+        payload = strip_html_tags(payload)
+    return payload
+
+
+def parse_multipart(msg: Message):
+    if msg.is_multipart():
+        for part in msg.iter_parts():
+            if part.is_multipart():
+                return parse_multipart(part)
+            else:
+                return parse_part(part)
+
+
 def eml_to_html(msg: Message):
     # Extract headers
     headers = parse_headers(msg)
@@ -66,39 +87,44 @@ def eml_to_html(msg: Message):
 """
 
     # Extract and add the email body to HTML
-    def get_alternative_payload(part):
-        """Handle multipart/alternative and choose the best available content."""
-        preferred_part = None
-        for subpart in part.iter_parts():
-            content_type = subpart.get_content_type()
-            if 'html' in content_type or (
-                preferred_part is None and 'plain' in content_type
-            ):
-                preferred_part = subpart
-        if preferred_part:
-            charset = preferred_part.get_content_charset() or 'utf-8'
-            payload = preferred_part.get_payload(decode=True).decode(charset, 'ignore')
-            return strip_html_tags(payload)
-        return ''
+    # def get_alternative_payload(part):
+    #     """Handle multipart/alternative and choose the best available content."""
+    #     preferred_part = None
+    #     for subpart in part.iter_parts():
+    #         content_type = subpart.get_content_type()
+    #         if 'html' in content_type or (
+    #             preferred_part is None and 'plain' in content_type
+    #         ):
+    #             preferred_part = subpart
+    #     if preferred_part:
+    #         charset = preferred_part.get_content_charset() or 'utf-8'
+    #         payload = preferred_part.get_payload(decode=True).decode(charset, 'ignore')
+    #         return strip_html_tags(payload)
+    #     return ''
 
     if msg.is_multipart():
-        for part in msg.iter_parts():
-            content_type = part.get_content_type()
-            if 'text/plain' in content_type:
-                charset = part.get_content_charset() or 'utf-8'
-                payload = part.get_payload(decode=True).decode(charset, 'ignore')
-                html_content += f'<pre>{payload}</pre>'
-            elif 'text/html' in content_type:
-                charset = part.get_content_charset() or 'utf-8'
-                payload = part.get_payload(decode=True).decode(charset, 'ignore')
-                html_content += strip_html_tags(payload)
-            elif 'multipart/alternative' in content_type:
-                html_content += get_alternative_payload(part)
+        html_content += parse_multipart(msg) or ''
+        # for part in msg.iter_parts():
+        #     parsed_part = parse_part(part)
+        #     html_content += parsed_part or ''
+        #     if  content_type=='multipart/alternative':
+        # content_type = part.get_content_type()
+        # print(content_type)
+        # if 'text/plain' in content_type:
+        #     charset = part.get_content_charset() or 'utf-8'
+        #     payload = part.get_payload(decode=True).decode(charset, 'ignore')
+        #     html_content += payload
+        # elif 'text/html' in content_type:
+        #     charset = part.get_content_charset() or 'utf-8'
+        #     payload = part.get_payload(decode=True).decode(charset, 'ignore')
+        #     html_content += strip_html_tags(payload)
+        # elif 'multipart/alternative' in content_type:
+        #     html_content += get_alternative_payload(part)
     else:
         payload = msg.get_payload(decode=True).decode(
             msg.get_content_charset() or 'utf-8', 'ignore'
         )
-        html_content += f'<pre>{payload}</pre>'
+        html_content += payload
 
     html_content += """
     </div>
