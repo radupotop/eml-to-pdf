@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import argparse
 from email import policy
 from email.message import Message
 from email.parser import BytesParser
@@ -95,13 +96,21 @@ def eml_to_html(msg: Message):
     return html_content
 
 
-def save_pdf_from_html(html_content, pdf_path):
-    Path(pdf_path + '.html').write_text(html_content)
-    HTML(string=html_content).write_pdf(pdf_path)
+def save_html(path, html_content):
+    Path(path).with_suffix('.html').write_text(html_content)
 
 
-# Example usage:
-eml_path = '2024-06-07_1219 update - Steven Strauss <steven@quantumgroup.uk>.eml'
-raw_eml = read_eml(eml_path)
-html_content = eml_to_html(raw_eml)
-save_pdf_from_html(html_content, eml_path + '.pdf')
+def save_pdf(path, html_content):
+    HTML(string=html_content).write_pdf(Path(path).with_suffix('.pdf'))
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('email_files', type=str, nargs='+')
+    args = parser.parse_args()
+    # runall(map(Path, args.email_files))
+    for eml_path in args.email_files:
+        raw_eml = read_eml(eml_path)
+        html_content = eml_to_html(raw_eml)
+        save_html(eml_path, html_content)
+        save_pdf(eml_path, html_content)
