@@ -70,6 +70,7 @@ def parse_multipart(msg: Message):
 def eml_to_html(msg: Message):
     # Extract headers
     headers = parse_headers(msg)
+    content = parse_multipart(msg)
 
     # Prepare HTML content
     html_content = f"""<!DOCTYPE html>
@@ -83,14 +84,10 @@ def eml_to_html(msg: Message):
 </head>
 <body>
     <p class="header">
-        {render_headers(headers)}
+{render_headers(headers)}
     </p>
     <div class="content">
-"""
-
-    html_content += parse_multipart(msg) or ''
-
-    html_content += """
+{content}
     </div>
 </body>
 </html>
