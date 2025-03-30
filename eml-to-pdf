@@ -45,7 +45,7 @@ def parse_all_headers(msg: Message):
 
 
 def render_headers(headers: dict):
-    return '\n'.join([f'<strong>{k}:</strong> {v}</br>' for k, v in headers.items()])
+    return '\n'.join([f'<tr><th>{k}:</th><td>{v}</td></tr>' for k, v in headers.items()])
 
 
 def parse_part(part: Message) -> str | None:
@@ -87,9 +87,13 @@ def eml_to_html(msg: Message):
     <link rel="stylesheet" href="file:///home/radu/Projects/eml-to-pdf/style.css">
 </head>
 <body>
-    <p id="headers">
+    <div id="headers">
+    <table>
+    <tbody>
 {render_headers(headers)}
-    </p>
+    </tbody>
+    </table>
+    </div>
     <div id="content">
 {content}
     </div>
