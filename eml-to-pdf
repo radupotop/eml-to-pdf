@@ -8,20 +8,27 @@ from email.message import Message
 from email.parser import BytesParser
 from email.utils import parsedate_to_datetime
 from pathlib import Path
+from typing import NamedTuple
 from zoneinfo import ZoneInfo
 
 from bs4 import BeautifulSoup
 from weasyprint import HTML
 
+EML_CONTENT_TYPES = ('text/plain', 'text/html')
 EML_HEADERS = ['Date', 'Subject', 'From', 'To', 'Cc', 'Bcc']
 TS_FORMAT = '%-d %B %Y, %H:%M'  # https://strftime.org/
 TZ = ZoneInfo('Europe/London')
 
 
+class ParsedPart(NamedTuple):
+    content_type: str
+    payload: str
+
+
 def strip_html_tags(html_source):
     """Strip all HTML tags and return plain text."""
     soup = BeautifulSoup(html_source, 'html.parser')
-    return soup.get_text()
+    return ''.join(map(str, soup.body.contents))
 
 
 def read_eml(eml_path) -> Message:
@@ -52,27 +59,23 @@ def render_headers(headers: dict):
     )
 
 
-def parse_part(part: Message) -> str | None:
+def parse_part(part: Message) -> ParsedPart | None:
     content_type = part.get_content_type()
-    print(content_type, file=sys.stderr)
-    payload = None
-    if content_type in ('text/plain', 'text/html'):
+    if content_type in EML_CONTENT_TYPES:
+        print(content_type, file=sys.stderr)
         charset = part.get_content_charset() or 'utf-8'
         payload = part.get_payload(decode=True).decode(charset, 'ignore')
-    if content_type == 'text/html':
-        payload = strip_html_tags(payload)
-    return payload
+        if content_type == 'text/html':
+            payload = strip_html_tags(payload)
+        return ParsedPart(content_type, payload)
 
 
 def parse_multipart(msg: Message):
-    if msg.is_multipart():
-        for part in msg.iter_parts():
-            if part.is_multipart():
-                return parse_multipart(part)
-            else:
-                return parse_part(part)
-    else:
-        return parse_part(msg)
+    part_map = dict()
+    for part in msg.walk():  # flat list of all sub-parts
+        if p := parse_part(part):
+            part_map[p.content_type] = p.payload
+    return part_map['text/plain']  # preferred
 
 
 def eml_to_html(msg: Message):
