@@ -2,6 +2,7 @@
 
 import argparse
 import html
+import sys
 from email import policy
 from email.message import Message
 from email.parser import BytesParser
@@ -45,6 +46,7 @@ def parse_all_headers(msg: Message):
 
 
 def render_headers(headers: dict):
+    headers['Date'] = headers['Date'].strftime(TS_FORMAT)
     return '\n'.join(
         [f'<tr><th>{k}:</th><td>{v}</td></tr>' for k, v in headers.items() if v]
     )
@@ -52,7 +54,7 @@ def render_headers(headers: dict):
 
 def parse_part(part: Message) -> str | None:
     content_type = part.get_content_type()
-    print(content_type)
+    print(content_type, file=sys.stderr)
     payload = None
     if content_type in ('text/plain', 'text/html'):
         charset = part.get_content_charset() or 'utf-8'
@@ -110,14 +112,16 @@ def save_html(path, html_content):
 
 
 def save_pdf(path, html_content):
-    HTML(string=html_content).write_pdf(Path(path).with_suffix('.pdf'))
+    pdf_path = Path(path).with_suffix('.pdf')
+    HTML(string=html_content).write_pdf(pdf_path)
+    print(f'"{pdf_path}"')
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('email_files', type=str, nargs='+')
     args = parser.parse_args()
-    # runall(map(Path, args.email_files))
+    # Run all
     for eml_path in args.email_files:
         raw_eml = read_eml(eml_path)
         html_content = eml_to_html(raw_eml)
