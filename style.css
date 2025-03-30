@@ -1,10 +1,12 @@
 body {
-    font-family: Arial, sans-serif;
-    font-size: 14px;
+    font-family: "Noto Sans", Arial, sans-serif;
+    font-size: 12px;
 }
-.header {
+#headers {
     margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: solid 1px #ccc;
 }
-.content {
+#content {
     white-space: pre-wrap;
 }

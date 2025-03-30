@@ -87,10 +87,10 @@ def eml_to_html(msg: Message):
     <link rel="stylesheet" href="file:///home/radu/Projects/eml-to-pdf/style.css">
 </head>
 <body>
-    <p class="header">
+    <p id="headers">
 {render_headers(headers)}
     </p>
-    <div class="content">
+    <div id="content">
 {content}
     </div>
 </body>
