@@ -36,7 +36,7 @@ def parse_single_header(msg: Message, head: str):
     '''
     if head == 'Date':
         return parsedate_to_datetime(msg[head]).astimezone(TZ)
-    return html.escape(msg.get(head, '–'))
+    return html.escape(msg.get(head, ''))
 
 
 def parse_all_headers(msg: Message):
@@ -45,7 +45,9 @@ def parse_all_headers(msg: Message):
 
 
 def render_headers(headers: dict):
-    return '\n'.join([f'<tr><th>{k}:</th><td>{v}</td></tr>' for k, v in headers.items()])
+    return '\n'.join(
+        [f'<tr><th>{k}:</th><td>{v}</td></tr>' for k, v in headers.items() if v]
+    )
 
 
 def parse_part(part: Message) -> str | None:
