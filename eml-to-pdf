@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+import html
 from email import policy
 from email.message import Message
 from email.parser import BytesParser
@@ -11,7 +12,7 @@ from zoneinfo import ZoneInfo
 from bs4 import BeautifulSoup
 from weasyprint import HTML
 
-EML_HEADERS = ['Subject', 'From', 'Date', 'To', 'Cc']
+EML_HEADERS = ['Date', 'Subject', 'From', 'To', 'Cc', 'Bcc']
 TS_FORMAT = '%-d %B %Y, %H:%M'  # https://strftime.org/
 TZ = ZoneInfo('Europe/London')
 
@@ -29,16 +30,18 @@ def read_eml(eml_path) -> Message:
     return msg
 
 
-def parse_headers(msg: Message):
-    headers = dict()
-    for _h in EML_HEADERS:
-        if _h == 'Date':
-            headers[_h] = parsedate_to_datetime(msg[_h]).astimezone(TZ)
-        elif _h == 'Subject':
-            headers[_h] = msg.get(_h, '–').replace('/', '_')
-        else:
-            headers[_h] = msg.get(_h, '–').replace('<', '&lt;').replace('>', '&gt;')
-    return headers
+def parse_single_header(msg: Message, head: str):
+    '''
+    Parse a single msg header at a time.
+    '''
+    if head == 'Date':
+        return parsedate_to_datetime(msg[head]).astimezone(TZ)
+    return html.escape(msg.get(head, '–'))
+
+
+def parse_all_headers(msg: Message):
+    header_values = [parse_single_header(msg, h) for h in EML_HEADERS]
+    return dict(zip(EML_HEADERS, header_values))
 
 
 def render_headers(headers: dict):
@@ -70,7 +73,7 @@ def parse_multipart(msg: Message):
 
 def eml_to_html(msg: Message):
     # Extract headers
-    headers = parse_headers(msg)
+    headers = parse_all_headers(msg)
     content = parse_multipart(msg)
 
     # Prepare HTML content
