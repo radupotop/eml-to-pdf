@@ -4,7 +4,7 @@ import argparse
 import html
 import sys
 from email import policy
-from email.message import Message
+from email.message import EmailMessage, MIMEPart
 from email.parser import BytesParser
 from email.utils import parsedate_to_datetime
 from pathlib import Path
@@ -26,7 +26,7 @@ class ParsedPart(NamedTuple):
     payload: str
 
 
-def strip_html_tags(html_source):
+def strip_html_tags(html_source: str) -> str:
     """Strip all HTML tags and return plain text."""
     soup = BeautifulSoup(html_source, 'html.parser')
     if soup.body:
@@ -34,14 +34,14 @@ def strip_html_tags(html_source):
     return ''
 
 
-def read_eml(eml_path) -> Message:
+def read_eml(eml_path: str) -> EmailMessage:
     # Load the email
     fb = Path(eml_path).read_bytes()
     msg = BytesParser(policy=policy.default).parsebytes(fb)
     return msg
 
 
-def parse_single_header(msg: Message, head: str):
+def parse_single_header(msg: EmailMessage, head: str):
     '''
     Parse a single msg header at a time.
     '''
@@ -50,19 +50,19 @@ def parse_single_header(msg: Message, head: str):
     return html.escape(msg.get(head, ''))
 
 
-def parse_all_headers(msg: Message):
+def parse_all_headers(msg: EmailMessage):
     header_values = [parse_single_header(msg, h) for h in EML_HEADERS]
     return dict(zip(EML_HEADERS, header_values))
 
 
-def render_headers(headers: dict):
+def render_headers(headers: dict) -> str:
     headers['Date'] = headers['Date'].strftime(TS_FORMAT)
     return '\n'.join(
         [f'<tr><th>{k}:</th><td>{v}</td></tr>' for k, v in headers.items() if v]
     )
 
 
-def parse_part(part: Message) -> ParsedPart | None:
+def parse_part(part: MIMEPart) -> ParsedPart | None:
     if part.is_attachment():
         return
     content_type = part.get_content_type()
@@ -75,7 +75,7 @@ def parse_part(part: Message) -> ParsedPart | None:
         return ParsedPart(content_type, payload)
 
 
-def parse_multipart(msg: Message) -> ParsedPart:
+def parse_multipart(msg: EmailMessage) -> ParsedPart:
     part_map = dict()
     for part in msg.walk():  # flat list of all sub-parts
         if p := parse_part(part):
@@ -83,7 +83,7 @@ def parse_multipart(msg: Message) -> ParsedPart:
     return part_map[PREFERRED]
 
 
-def eml_to_html(msg: Message):
+def eml_to_html(msg: EmailMessage):
     # Extract headers
     headers = parse_all_headers(msg)
     mimetype, content = parse_multipart(msg)
