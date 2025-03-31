@@ -3,6 +3,7 @@
 import argparse
 import html
 import sys
+import tempfile
 from email import policy
 from email.message import EmailMessage, MIMEPart
 from email.parser import BytesParser
@@ -118,9 +119,11 @@ def eml_to_html(msg: EmailMessage):
 
 
 def save_html(path, html_content):
-    outpath = Path(path).with_suffix('.html')
-    outpath.write_text(html_content)
-    print(outpath, file=sys.stderr)
+    with tempfile.NamedTemporaryFile(
+        delete=False, prefix='eml-', suffix='.html', mode='w', encoding='utf-8'
+    ) as tmp:
+        tmp.write(html_content)
+    print(tmp.name, file=sys.stderr)
 
 
 def save_pdf(path, html_content):
