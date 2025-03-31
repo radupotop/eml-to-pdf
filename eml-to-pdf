@@ -11,8 +11,8 @@ from pathlib import Path
 from typing import NamedTuple
 from zoneinfo import ZoneInfo
 
+import weasyprint as wp
 from bs4 import BeautifulSoup
-from weasyprint import HTML
 
 EML_CONTENT_TYPES = ('text/plain', 'text/html')
 EML_HEADERS = ['Date', 'Subject', 'From', 'To', 'Cc', 'Bcc']
@@ -116,7 +116,7 @@ def save_html(path, html_content):
 
 def save_pdf(path, html_content):
     pdf_path = Path(path).with_suffix('.pdf')
-    HTML(string=html_content).write_pdf(pdf_path)
+    wp.HTML(string=html_content).write_pdf(pdf_path)
     print(f'"{pdf_path}"')
 
 
