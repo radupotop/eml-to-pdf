@@ -1,3 +1,6 @@
+@page {
+    size: A4;
+}
 body {
     font-family: "Noto Sans", Arial, sans-serif;
     font-size: 12px;
