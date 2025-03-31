@@ -15,7 +15,7 @@ import weasyprint as wp
 from bs4 import BeautifulSoup
 
 EML_CONTENT_TYPES = ('text/plain', 'text/html')
-EML_HEADERS = ['Date', 'Subject', 'From', 'To', 'Cc', 'Bcc']
+EML_HEADERS = ('Date', 'Subject', 'From', 'To', 'Cc', 'Bcc')
 TS_FORMAT = '%-d %B %Y, %H:%M'  # https://strftime.org/
 TZ = ZoneInfo('Europe/London')
 
