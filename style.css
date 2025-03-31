@@ -16,3 +16,10 @@ body {
 th {
     padding-right: 1em;
 }
+.moz-signature img {
+    width: 100px;
+    padding-right: 25px;
+}
+.moz-signature address {
+    font-size: 10px;
+}
