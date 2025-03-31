@@ -33,6 +33,9 @@ def strip_html_tags(html_source: str) -> str:
     for tag in soup.find_all('style'):
         print('Removing tag:', tag, file=sys.stderr)
         tag.decompose()
+    # Delete all style= attributes
+    for tag in soup.find_all(style=True):
+        del tag['style']
     if soup.body:
         return ''.join(map(str, soup.body.contents))
     return ''
