@@ -28,7 +28,9 @@ class ParsedPart(NamedTuple):
 def strip_html_tags(html_source):
     """Strip all HTML tags and return plain text."""
     soup = BeautifulSoup(html_source, 'html.parser')
-    return ''.join(map(str, soup.body.contents))
+    if soup.body:
+        return ''.join(map(str, soup.body.contents))
+    return ''
 
 
 def read_eml(eml_path) -> Message:
