@@ -29,9 +29,10 @@ class ParsedPart(NamedTuple):
 
 def strip_html_tags(html_source: str) -> str:
     soup = BeautifulSoup(html_source, 'html.parser')
-    # for tag in soup.find_all(style=True):
-    #     print(tag.name, '\t', tag['style'], file=sys.stderr)
-    #     del tag['style']
+    # Delete all <style> tags
+    for tag in soup.find_all('style'):
+        print('Removing tag:', tag, file=sys.stderr)
+        tag.decompose()
     if soup.body:
         return ''.join(map(str, soup.body.contents))
     return ''
