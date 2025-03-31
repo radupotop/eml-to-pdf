@@ -14,8 +14,9 @@ from zoneinfo import ZoneInfo
 import weasyprint as wp
 from bs4 import BeautifulSoup
 
-EML_CONTENT_TYPES = ('text/plain', 'text/html')
+EML_CONTENT_TYPES = ('text/html', 'text/plain')
 EML_HEADERS = ('Date', 'Subject', 'From', 'To', 'Cc', 'Bcc')
+PREFERRED = EML_CONTENT_TYPES[0]
 TS_FORMAT = '%-d %B %Y, %H:%M'  # https://strftime.org/
 TZ = ZoneInfo('Europe/London')
 
@@ -62,6 +63,8 @@ def render_headers(headers: dict):
 
 
 def parse_part(part: Message) -> ParsedPart | None:
+    if part.is_attachment():
+        return
     content_type = part.get_content_type()
     if content_type in EML_CONTENT_TYPES:
         print(content_type, file=sys.stderr)
@@ -72,18 +75,18 @@ def parse_part(part: Message) -> ParsedPart | None:
         return ParsedPart(content_type, payload)
 
 
-def parse_multipart(msg: Message):
+def parse_multipart(msg: Message) -> ParsedPart:
     part_map = dict()
     for part in msg.walk():  # flat list of all sub-parts
         if p := parse_part(part):
-            part_map[p.content_type] = p.payload
-    return part_map['text/plain']  # preferred
+            part_map[p.content_type] = p
+    return part_map[PREFERRED]
 
 
 def eml_to_html(msg: Message):
     # Extract headers
     headers = parse_all_headers(msg)
-    content = parse_multipart(msg)
+    mimetype, content = parse_multipart(msg)
 
     # Prepare HTML content
     html_content = f"""<!DOCTYPE html>
@@ -103,7 +106,7 @@ def eml_to_html(msg: Message):
     </tbody>
     </table>
     </div>
-    <div id="content">
+    <div id="content" class="{mimetype.replace('/', '-')}">
 {content}
     </div>
 </body>
