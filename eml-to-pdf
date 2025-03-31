@@ -111,7 +111,9 @@ def eml_to_html(msg: Message):
 
 
 def save_html(path, html_content):
-    Path(path).with_suffix('.html').write_text(html_content)
+    outpath = Path(path).with_suffix('.html')
+    outpath.write_text(html_content)
+    print(outpath, file=sys.stderr)
 
 
 def save_pdf(path, html_content):
