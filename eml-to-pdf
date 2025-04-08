@@ -15,7 +15,7 @@ from zoneinfo import ZoneInfo
 
 import weasyprint as wp
 from bs4 import BeautifulSoup
-from jinja2 import Environment, Template
+from jinja2 import Environment
 
 EML_CONTENT_TYPES = ('text/html', 'text/plain')
 EML_HEADERS = ('Date', 'Subject', 'From', 'To', 'Cc')
@@ -28,7 +28,7 @@ HTML_TPL = """<!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Email: {{ headers.Subject | escape }}</title>
+    <title>EMAIL {{ headers.Subject | escape }}</title>
     <meta name="author" content="{{ headers.From | escape }}">
     <meta name="dcterms.created" content="{{ headers.Date | replace(' ', 'T') }}">
     <link rel="stylesheet" href="file:///home/radu/Projects/eml-to-pdf/style.css">
