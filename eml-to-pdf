@@ -4,6 +4,7 @@ import argparse
 import html
 import sys
 import tempfile
+from datetime import datetime
 from email import policy
 from email.message import EmailMessage, MIMEPart
 from email.parser import BytesParser
@@ -14,7 +15,7 @@ from zoneinfo import ZoneInfo
 
 import weasyprint as wp
 from bs4 import BeautifulSoup
-from jinja2 import Template
+from jinja2 import Environment, Template
 
 EML_CONTENT_TYPES = ('text/html', 'text/plain')
 EML_HEADERS = ('Date', 'Subject', 'From', 'To', 'Cc')
@@ -23,7 +24,7 @@ TS_FORMAT = '%-d %B %Y, %H:%M'  # https://strftime.org/
 TZ = ZoneInfo('Europe/London')
 
 
-HTML_TPL = Template("""<!DOCTYPE html>
+HTML_TPL = """<!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8">
@@ -40,7 +41,7 @@ HTML_TPL = Template("""<!DOCTYPE html>
         {% if value is not none %}
             <tr>
                 <th>{{ key }}:</th>
-                <td>{{ value | escape }}</td>
+                <td>{{ value | date_fmt | escape }}</td>
             </tr>
         {% endif %}
         {% endfor %}
@@ -52,12 +53,18 @@ HTML_TPL = Template("""<!DOCTYPE html>
 </div>
 </body>
 </html>
-""")
+"""
 
 
 class ParsedPart(NamedTuple):
     content_type: str
     payload: str
+
+
+def date_fmt(value, date_format=TS_FORMAT):
+    if isinstance(value, datetime):
+        return value.strftime(date_format)
+    return value
 
 
 def strip_html_tags(html_source: str) -> str:
@@ -120,7 +127,10 @@ def eml_to_html(msg: EmailMessage):
     # Extract headers
     headers = parse_all_headers(msg)
     mimetype, content = parse_multipart(msg)
-    return HTML_TPL.render(
+    env = Environment()
+    env.filters['date_fmt'] = date_fmt
+    template = env.from_string(HTML_TPL)
+    return template.render(
         headers=headers,
         mimetype=mimetype,
         content=content,
