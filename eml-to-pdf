@@ -27,9 +27,9 @@ HTML_TPL = Template("""<!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Email: {{ headers.Subject }}</title>
+    <title>Email: {{ headers.Subject | escape }}</title>
     <meta name="author" content="{{ headers.From | escape }}">
-    <meta name="dcterms.created" content="{{ headers.Date }}">
+    <meta name="dcterms.created" content="{{ headers.Date | replace(' ', 'T') }}">
     <link rel="stylesheet" href="file:///home/radu/Projects/eml-to-pdf/style.css">
 </head>
 <body>
