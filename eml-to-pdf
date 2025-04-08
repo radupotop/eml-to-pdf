@@ -14,12 +14,45 @@ from zoneinfo import ZoneInfo
 
 import weasyprint as wp
 from bs4 import BeautifulSoup
+from jinja2 import Template
 
 EML_CONTENT_TYPES = ('text/html', 'text/plain')
 EML_HEADERS = ('Date', 'Subject', 'From', 'To', 'Cc')
 PREFERRED = EML_CONTENT_TYPES[0]
 TS_FORMAT = '%-d %B %Y, %H:%M'  # https://strftime.org/
 TZ = ZoneInfo('Europe/London')
+
+
+HTML_TPL = Template("""<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Email: {{ headers.Subject }}</title>
+    <meta name="author" content="{{ headers.From | escape }}">
+    <meta name="dcterms.created" content="{{ headers.Date }}">
+    <link rel="stylesheet" href="file:///home/radu/Projects/eml-to-pdf/style.css">
+</head>
+<body>
+<div id="headers">
+    <table>
+    <tbody>
+        {% for key, value in headers.items() %}
+        {% if value is not none %}
+            <tr>
+                <th>{{ key }}:</th>
+                <td>{{ value | escape }}</td>
+            </tr>
+        {% endif %}
+        {% endfor %}
+    </tbody>
+    </table>
+</div>
+<div id="content" class="{{ mimetype | replace('/', '-') }}">
+{{ content | safe }}
+</div>
+</body>
+</html>
+""")
 
 
 class ParsedPart(NamedTuple):
@@ -54,19 +87,12 @@ def parse_single_header(msg: EmailMessage, head: str):
     '''
     if head == 'Date':
         return parsedate_to_datetime(msg[head]).astimezone(TZ)
-    return html.escape(msg.get(head, ''))
+    return msg.get(head)
 
 
 def parse_all_headers(msg: EmailMessage):
     header_values = [parse_single_header(msg, h) for h in EML_HEADERS]
     return dict(zip(EML_HEADERS, header_values))
-
-
-def render_headers(headers: dict) -> str:
-    headers['Date'] = headers['Date'].strftime(TS_FORMAT)
-    return '\n'.join(
-        [f'<tr><th>{k}:</th><td>{v}</td></tr>' for k, v in headers.items() if v]
-    )
 
 
 def parse_part(part: MIMEPart) -> ParsedPart | None:
@@ -94,32 +120,11 @@ def eml_to_html(msg: EmailMessage):
     # Extract headers
     headers = parse_all_headers(msg)
     mimetype, content = parse_multipart(msg)
-
-    # Prepare HTML content
-    html_content = f"""<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>Email: {headers.get('Subject')}</title>
-    <meta name="author" content="{headers.get('From')}">
-    <meta name="dcterms.created" content="{headers.get('Date').isoformat()}">
-    <link rel="stylesheet" href="file:///home/radu/Projects/eml-to-pdf/style.css">
-</head>
-<body>
-    <div id="headers">
-    <table>
-    <tbody>
-{render_headers(headers)}
-    </tbody>
-    </table>
-    </div>
-    <div id="content" class="{mimetype.replace('/', '-')}">
-{content}
-    </div>
-</body>
-</html>
-"""
-    return html_content
+    return HTML_TPL.render(
+        headers=headers,
+        mimetype=mimetype,
+        content=content,
+    )
 
 
 def save_html(path, html_content):
