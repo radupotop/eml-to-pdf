@@ -6,6 +6,9 @@ from pypdf import PdfReader, PdfWriter
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 
+PREFIX = ' Bundle Page'
+SEPARATOR = 'of'
+
 
 def add_page_numbers(input_pdf, output_pdf):
     # Open the existing PDF
@@ -23,7 +26,7 @@ def add_page_numbers(input_pdf, output_pdf):
         can.setFont("Times-Italic", 10)
 
         # Add the page number at the bottom, positioned in the center
-        text = f"– Bundle Page {i + 1} of {num_pages} –"
+        text = f"–{PREFIX} {i + 1} {SEPARATOR} {num_pages} –"
         can.drawCentredString(int(A4[0] / 2), 30, text)
         can.save()
 
