@@ -1,0 +1,77 @@
+#!/usr/bin/env python3
+
+import argparse
+from email import policy
+from email.parser import BytesParser
+from email.utils import parsedate_to_datetime
+from hashlib import sha1
+from pathlib import Path
+from typing import Iterable
+from zoneinfo import ZoneInfo
+
+TZ = ZoneInfo('Europe/London')
+DRY_RUN = False
+
+dupe_map = dict()
+
+
+def process_eml_file(eml_file: Path):
+    try:
+        # Read the .eml file in binary mode
+        msg_bytes = eml_file.read_bytes()
+        checksum = sha1(msg_bytes).hexdigest()
+        is_dupe = checksum in dupe_map
+        if is_dupe:
+            print(
+                f"Checksum\t{checksum}\nDuplicate\t{eml_file}\nOriginal\t{dupe_map[checksum]}"
+            )
+        else:
+            dupe_map[checksum] = str(eml_file)
+
+        # Parse the email content
+        msg = BytesParser(policy=policy.default).parsebytes(msg_bytes, headersonly=True)
+
+        # Extract the Date header
+        date_header = msg.get('Date')
+        subject = msg.get('Subject')
+        from_ = msg.get('From')
+
+        if date_header and subject:
+            # Parse the date header into a datetime object
+            date_object = parsedate_to_datetime(date_header)
+
+            # Format the date for the filename
+            formatted_date = date_object.astimezone(TZ).strftime('%Y-%m-%d_%H%M')
+            clean_subject = subject.replace('/', '_')
+
+            # Create new filename
+            # Preserve parent path for each file
+            new_filename = (
+                eml_file.parent
+                / f"{formatted_date} {clean_subject} - {from_}{eml_file.suffix}"
+            )
+
+            print(f"Rename\t{eml_file}\nTo\t{new_filename}")
+            # Rename the original file to the new filename
+            if not DRY_RUN:
+                eml_file.rename(new_filename)
+        else:
+            print(f"No headers found in {eml_file}")
+    except Exception as e:
+        print(f"Error processing {eml_file}: {e}")
+
+
+def runall(email_files: Iterable[Path]):
+    for eml in email_files:
+        process_eml_file(eml)
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('email_files', type=str, nargs='+')
+    parser.add_argument('--dry-run', action='store_true')
+    args = parser.parse_args()
+    DRY_RUN = args.dry_run
+    if DRY_RUN:
+        print('DRY RUN')
+    runall(map(Path, args.email_files))
