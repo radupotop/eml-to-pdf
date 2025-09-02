@@ -30,7 +30,7 @@ HTML_TPL = """<!DOCTYPE html>
     <title>EMAIL: {{ headers.Date | date_fmt }} - {{ headers.Subject | escape }} - {{ headers.From | escape }}</title>
     <meta name="author" content="{{ headers.From | escape }}">
     <meta name="dcterms.created" content="{{ headers.Date | replace(' ', 'T') }}">
-    <link rel="stylesheet" href="file:///home/radu/Projects/eml-to-pdf/style.css">
+    <link rel="stylesheet" href="file:///home/radu/Projects/eml-tools/style.css">
 </head>
 <body>
 <div id="headers">
