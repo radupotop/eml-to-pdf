@@ -24,7 +24,7 @@ TZ = ZoneInfo('Europe/London')
 
 # Internal
 BASE_DIR = Path(__file__).resolve().parent
-CSS_URI = (BASE_DIR / 'style.css').as_uri()
+CSS_FILE = BASE_DIR / 'style.css'
 
 HTML_TPL = """<!DOCTYPE html>
 <html>
@@ -133,7 +133,7 @@ def eml_to_html(msg: EmailMessage):
     env.filters['date_fmt'] = date_fmt
     template = env.from_string(HTML_TPL)
     return template.render(
-        CSS_URI=CSS_URI,
+        CSS_URI=CSS_FILE.as_uri(),
         headers=headers,
         mimetype=mimetype,
         content=content,
@@ -155,6 +155,8 @@ def save_pdf(path, html_content):
 
 
 if __name__ == '__main__':
+    if not CSS_FILE.is_file():
+        raise RuntimeError('Could not find CSS File')
     parser = argparse.ArgumentParser()
     parser.add_argument('email_files', type=str, nargs='+')
     args = parser.parse_args()
