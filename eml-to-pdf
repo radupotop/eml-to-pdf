@@ -22,6 +22,9 @@ PREFERRED = EML_CONTENT_TYPES[0]
 TS_FORMAT = '%-d %B %Y, %H:%M'  # https://strftime.org/
 TZ = ZoneInfo('Europe/London')
 
+# Internal
+BASE_DIR = Path(__file__).resolve().parent
+CSS_URI = (BASE_DIR / 'style.css').as_uri()
 
 HTML_TPL = """<!DOCTYPE html>
 <html>
@@ -30,7 +33,7 @@ HTML_TPL = """<!DOCTYPE html>
     <title>EMAIL: {{ headers.Date | date_fmt }} - {{ headers.Subject | escape }} - {{ headers.From | escape }}</title>
     <meta name="author" content="{{ headers.From | escape }}">
     <meta name="dcterms.created" content="{{ headers.Date | replace(' ', 'T') }}">
-    <link rel="stylesheet" href="file:///home/radu/Projects/eml-tools/style.css">
+    <link rel="stylesheet" href="{{ CSS_URI }}">
 </head>
 <body>
 <div id="headers">
@@ -130,6 +133,7 @@ def eml_to_html(msg: EmailMessage):
     env.filters['date_fmt'] = date_fmt
     template = env.from_string(HTML_TPL)
     return template.render(
+        CSS_URI=CSS_URI,
         headers=headers,
         mimetype=mimetype,
         content=content,
@@ -146,7 +150,7 @@ def save_html(path, html_content):
 
 def save_pdf(path, html_content):
     pdf_path = Path(path).with_suffix('.pdf')
-    wp.HTML(string=html_content).write_pdf(pdf_path)
+    wp.HTML(string=html_content, base_url=str(BASE_DIR)).write_pdf(pdf_path)
     print(f'"{pdf_path}"')
 
 
